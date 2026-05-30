@@ -78,8 +78,14 @@ export class RegisterPage extends BasePage {
   }
 
   async submit(): Promise<void> {
-    await this.page.waitForTimeout(1500); // delay 1.5s sau khi điền form
     await this.submitButton.click();
+
+    const isFormValid = await this.registerForm
+      .evaluate((form: HTMLFormElement) => form.checkValidity())
+      .catch(() => true);
+    if (!isFormValid) {
+      return;
+    }
 
     // Wait for reCAPTCHA token to be set (if present) before continuing
     try {

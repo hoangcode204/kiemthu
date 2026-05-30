@@ -11,7 +11,7 @@ export class BasePage {
    * Điều hướng đến đường dẫn
    */
   async goto(path: string = '/'): Promise<void> {
-    await this.page.goto(path);
+    await this.page.goto(path, { waitUntil: 'domcontentloaded' });
     await this.page.waitForLoadState('domcontentloaded');
   }
 

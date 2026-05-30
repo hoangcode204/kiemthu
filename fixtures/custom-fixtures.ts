@@ -7,12 +7,14 @@ import { test as base, expect } from '@playwright/test';
 import { HomePage } from '../pages/HomePage';
 import { SearchPage } from '../pages/SearchPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { CartPage } from '../pages/CartPage';
 
 // Định nghĩa kiểu cho các fixture
 type PageFixtures = {
   homePage: HomePage;
   searchPage: SearchPage;
   registerPage: RegisterPage;
+  cartPage: CartPage;
 };
 
 // Mở rộng test với các page object sẵn sàng dùng
@@ -31,6 +33,10 @@ export const test = base.extend<PageFixtures>({
 
   registerPage: async ({ page }, use) => {
     await use(new RegisterPage(page));
+  },
+
+  cartPage: async ({ page }, use) => {
+    await use(new CartPage(page));
   },
 
 });

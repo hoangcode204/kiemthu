@@ -17,11 +17,17 @@
     "test:report-mode": "npx playwright test --project=chromium --reporter=html",
     "report": "npx playwright show-report"
   },
-  "keywords": ["playwright", "testing", "automation", "mhm.vn"],
+  "keywords": [
+    "playwright",
+    "testing",
+    "automation",
+    "mhm.vn"
+  ],
   "author": "Nhóm CT070128 - CT070129 - CT070111",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.52.0",
+    "@types/node": "^25.9.1",
     "dotenv": "^16.0.0",
     "typescript": "^5.0.0"
   }

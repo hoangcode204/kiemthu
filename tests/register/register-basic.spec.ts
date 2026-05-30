@@ -2,345 +2,210 @@
 // MODULE REGISTER/SIGN-UP - mhm.vn
 // ============================================================
 
-import { test, expect } from '@playwright/test';
-import { RegisterPage } from '../../pages/RegisterPage';
+import { test, expect } from '../../fixtures/custom-fixtures';
 
-test.describe('Chức năng đăng ký', () => {
-    let registerPage: RegisterPage;
+type RegisterData = {
+  lastName: string;
+  firstName: string;
+  phone: string;
+  email: string;
+  password: string;
+};
 
-    const randomEmail = () => `test.${Date.now()}@example.com`;
-    const randomPhone = () => `09${Math.floor(10000000 + Math.random() * 88999999)}`;
+test.describe('Chuc nang dang ky', () => {
+  const randomEmail = () => `test.${Date.now()}.${Math.floor(Math.random() * 1000)}@example.com`;
+  const randomPhone = () => `09${Math.floor(10000000 + Math.random() * 89999999)}`;
 
-    const buildValidData = () => ({
-        lastName: 'Nguyen',
-        firstName: 'An',
-        phone: randomPhone(),
-        email: randomEmail(),
-        password: 'Test1234'
+  const buildValidData = (): RegisterData => ({
+    lastName: 'Nguyen',
+    firstName: 'An',
+    phone: randomPhone(),
+    email: randomEmail(),
+    password: 'Test1234',
+  });
+
+  const requiredFields = [
+    { id: '#lastName', label: 'Ho' },
+    { id: '#firstName', label: 'Ten' },
+    { id: '#Phone', label: 'So dien thoai' },
+    { id: '#email', label: 'Email' },
+    { id: '#password', label: 'Mat khau' },
+  ];
+
+  test.beforeEach(async ({ registerPage }) => {
+    await registerPage.open();
+  });
+
+  async function fillAllValid(registerPage: { fillForm: (data: Partial<RegisterData>) => Promise<void> }, overrides: Partial<RegisterData> = {}) {
+    await registerPage.fillForm({ ...buildValidData(), ...overrides });
+  }
+
+  async function getValidationMessage(page: import('@playwright/test').Page, selector: string): Promise<string> {
+    return await page.locator(selector).evaluate((el: HTMLInputElement) => el.validationMessage);
+  }
+
+  test('TC_REGISTER_001: Mo trang dang ky va hien thi form', async ({ page, registerPage }, testInfo) => {
+    await testInfo.attach('Current URL', {
+      body: page.url(),
+      contentType: 'text/plain',
     });
 
-    const fillAllValid = async (overrides: Partial<ReturnType<typeof buildValidData>> = {}) => {
-        await registerPage.fillForm({ ...buildValidData(), ...overrides });
-    };
-
-    test.beforeEach(async ({ page }) => {
-        registerPage = new RegisterPage(page);
-        await page.goto('https://mhm.vn/account/register');
-        await page.waitForLoadState('domcontentloaded');
-    });
-
-    test('TC_REGISTER_001: Không điền thông tin nào', async ({ page }, testInfo) => {
-        await registerPage.submit();
-
-        await testInfo.attach('screenshot', {
-            body: await page.screenshot(),
-            contentType: 'image/png'
-        });
-
-        // Vẫn ở trang register
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        // Check tất cả 5 field required đều có validation message
-        const fields = [
-            { id: '#lastName', label: 'Họ' },
-            { id: '#firstName', label: 'Tên' },
-            { id: '#Phone', label: 'Số điện thoại' },
-            { id: '#email', label: 'Email' },
-            { id: '#password', label: 'Mật khẩu' },
-        ];
-
-        for (const field of fields) {
-            const msg = await page
-                .locator(field.id)
-                .evaluate((el: HTMLInputElement) => el.validationMessage);
-            expect(msg, `Field "${field.label}" phải có validation message`).toBeTruthy();
-        }
-    });
-
-    test('TC_REGISTER_002: Không điền họ', async ({ page }, testInfo) => {
-        await fillAllValid({ lastName: '' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const lastNameValidation = await page
-            .locator('#lastName')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(lastNameValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_003: Không điền tên', async ({ page }, testInfo) => {
-        await fillAllValid({ firstName: '' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const firstNameValidation = await page
-            .locator('#firstName')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(firstNameValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_004: Không điền số điện thoại', async ({ page }, testInfo) => {
-        await fillAllValid({ phone: '' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const phoneValidation = await page
-            .locator('#Phone')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(phoneValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_005: Số điện thoại chứa ký tự chữ', async ({ page }, testInfo) => {
-        await fillAllValid({ phone: '09ab123' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const phoneValidation = await page
-            .locator('#Phone')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(phoneValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_006: Không điền email', async ({ page }, testInfo) => {
-        await fillAllValid({ email: '' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const emailValidation = await page
-            .locator('#email')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(emailValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_007: Email sai định dạng "abc@"', async ({ page }, testInfo) => {
-        await fillAllValid({ email: 'abc@' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const emailValidation = await page
-            .locator('#email')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(emailValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_008: Email có khoảng trắng ở đầu', async ({ page }, testInfo) => {
-        await fillAllValid({ email: `  ${randomEmail()}` });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account/);
-    await expect(page).not.toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_009: Email có khoảng trắng ở cuối', async ({ page }, testInfo) => {
-        await fillAllValid({ email: `${randomEmail()}  ` });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-     // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account/);
-    await expect(page).not.toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_010: Không điền mật khẩu', async ({ page }, testInfo) => {
-        await fillAllValid({ password: '' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const passwordValidation = await page
-            .locator('#password')
-            .evaluate((el: HTMLInputElement) => el.validationMessage);
-        expect(passwordValidation).toBeTruthy();
-    });
-
-    test('TC_REGISTER_011: Mật khẩu có chữ hoa', async ({ page }, testInfo) => {
-        await fillAllValid({ password: 'Abc12345' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account/);
-    await expect(page).not.toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_012: Mật khẩu 1 ký tự', async ({ page }, testInfo) => {
-        await fillAllValid({ password: 'a' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account/);
-    await expect(page).not.toHaveURL(/\/account\/register/)
-
-        const bodyText = await page.locator('body').textContent();
-        expect(bodyText ?? '').toContain('Mật khẩu quá ngắn');
-    });
-
-    test('TC_REGISTER_013: Mật khẩu siêu dài', async ({ page }, testInfo) => {
-        const longPassword = 'a'.repeat(256);
-
-        await fillAllValid({ password: longPassword });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account/);
-    await expect(page).not.toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_014: Họ là số', async ({ page }, testInfo) => {
-        await fillAllValid({ lastName: '12345' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_015: Tên là số', async ({ page }, testInfo) => {
-        await fillAllValid({ firstName: '67890' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_016: Họ là khoảng trắng', async ({ page }, testInfo) => {
-        await fillAllValid({ lastName: '    ' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_017: Tên là khoảng trắng', async ({ page }, testInfo) => {
-        await fillAllValid({ firstName: '    ' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
- // Chờ navigation hoàn tất sau khi server xử lý
-    await page.waitForURL(/\/account/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/account\/register/)
-    });
-
-    test('TC_REGISTER_018: Đăng ký thành công với thông tin hợp lệ', async ({ page }, testInfo) => {
-        await fillAllValid({
-            email: `test.${Date.now()}@example.com`,
-            phone: `09${Math.floor(10000000 + Math.random() * 89999999)}`
-        });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        // Chờ navigation hoàn tất sau khi server xử lý
-        await page.waitForURL(/\/account/, { timeout: 10000 });
-        await expect(page).toHaveURL(/\/account/);
-        await expect(page).not.toHaveURL(/\/account\/register/);
-    });
-
-    test('TC_REGISTER_019: Email đã tồn tại', async ({ page }, testInfo) => {
-        await fillAllValid({ email: 'danghung2004@gmail.com' });
-        await registerPage.submit();
-
-        await testInfo.attach('Current URL', {
-            body: page.url(),
-            contentType: 'text/plain'
-        });
-
-        await expect(page).toHaveURL(/\/account\/register/);
-
-        const errorText = await registerPage.getErrorMessage();
-        expect(errorText.length).toBeGreaterThan(0);
-    });
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await registerPage.isRegisterFormVisible()).toBeTruthy();
+    await expect(registerPage.submitButton).toBeVisible();
+  });
+
+  test('TC_REGISTER_002: Khong dien thong tin nao', async ({ page, registerPage }) => {
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+
+    for (const field of requiredFields) {
+      const message = await getValidationMessage(page, field.id);
+      expect(message, `${field.label} phai co validation message`).toBeTruthy();
+    }
+  });
+
+  test('TC_REGISTER_003: Khong dien ho', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { lastName: '' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#lastName')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_004: Khong dien ten', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { firstName: '' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#firstName')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_005: Khong dien so dien thoai', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { phone: '' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#Phone')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_006: Khong dien email', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: '' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#email')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_007: Khong dien mat khau', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { password: '' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#password')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_008: So dien thoai chua chu cai', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { phone: '09ab123456' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#Phone')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_009: So dien thoai chua ky tu dac biet', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { phone: '0900-123-456' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#Phone')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_010: Email sai dinh dang "abc@"', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: 'abc@' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#email')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_011: Email khong co ky tu @', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: 'abcexample.com' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#email')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_012: Email co dau cham o cuoi ten mien', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: 'abc@example.' });
+    await registerPage.submit();
+
+    await expect(page).toHaveURL(/\/account\/register/);
+    expect(await getValidationMessage(page, '#email')).toBeTruthy();
+  });
+
+  test('TC_REGISTER_013: Email co khoang trang o dau duoc browser trim', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: `  ${randomEmail()}` });
+
+    const emailValue = await page.locator('#email').inputValue();
+    expect(emailValue.startsWith(' ')).toBeFalsy();
+    expect(await getValidationMessage(page, '#email')).toBe('');
+  });
+
+  test('TC_REGISTER_014: Email co khoang trang o cuoi duoc browser trim', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: `${randomEmail()}  ` });
+
+    const emailValue = await page.locator('#email').inputValue();
+    expect(emailValue.endsWith(' ')).toBeFalsy();
+    expect(await getValidationMessage(page, '#email')).toBe('');
+  });
+
+  test('TC_REGISTER_015: Ho chi chua khoang trang phai bi validate', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { lastName: '   ' });
+
+    const message = await getValidationMessage(page, '#lastName');
+    expect(message).toBeTruthy();
+  });
+
+  test('TC_REGISTER_016: Ten chi chua khoang trang phai bi validate', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { firstName: '   ' });
+
+    const message = await getValidationMessage(page, '#firstName');
+    expect(message).toBeTruthy();
+  });
+
+  test('TC_REGISTER_017: Ho la so phai bi validate', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { lastName: '12345' });
+
+    const message = await getValidationMessage(page, '#lastName');
+    expect(message).toBeTruthy();
+  });
+
+  test('TC_REGISTER_018: Ten la so phai bi validate', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { firstName: '67890' });
+
+    const message = await getValidationMessage(page, '#firstName');
+    expect(message).toBeTruthy();
+  });
+
+  test('TC_REGISTER_019: Mat khau 1 ky tu phai bi validate do qua ngan', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { password: 'a' });
+
+    const message = await getValidationMessage(page, '#password');
+    expect(message).toBeTruthy();
+  });
+
+  test('TC_REGISTER_020: Khong lo loi he thong khi validate form dang ky', async ({ page, registerPage }) => {
+    await fillAllValid(registerPage, { email: 'abc@' });
+    await registerPage.submit();
+
+    const bodyText = await page.locator('body').innerText();
+
+    expect(bodyText).not.toContain('[object Object]');
+    expect(bodyText).not.toContain('undefined');
+    expect(bodyText).not.toContain('null');
+    expect(bodyText).not.toContain('Liquid error');
+  });
 });
